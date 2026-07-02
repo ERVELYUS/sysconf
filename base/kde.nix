@@ -26,5 +26,4 @@
 
   # Stylix has a dedicated Plasma target — keeps theming consistent with
   # the rest of the fleet without manual Plasma color-scheme setup.
-  stylix.targets.plasma.enable = true;
 }
