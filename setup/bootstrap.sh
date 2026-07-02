@@ -21,6 +21,7 @@ ask()  { echo -e "\n${BOLD}$*${NC}"; }
 # ── Preflight ─────────────────────────────────────────────────────────────────
 [[ $EUID -eq 0 ]] && die "Run as your normal user, not root. sudo will be used where needed."
 command -v nixos-rebuild &>/dev/null || die "nixos-rebuild not found — are you on NixOS?"
+command -v git &>/dev/null || die "git not found — run the script via: nix-shell -p git --run 'bash setup/bootstrap.sh'"
 [[ -f "$REPO_DIR/flake.nix" ]]            || die "flake.nix not found at $REPO_DIR — wrong repo structure."
 [[ -f "$REPO_DIR/base/common/core.nix" ]] || die "base/common/core.nix not found — wrong repo structure."
 [[ -d "$REPO_DIR/base" ]]                 || die "base/ not found — wrong repo structure."
