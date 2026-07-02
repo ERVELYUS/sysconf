@@ -85,6 +85,7 @@
     sshs
     tree-sitter
     nodejs_22
+    python3
     go
     cargo
     nixfmt

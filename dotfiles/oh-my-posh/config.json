@@ -62,7 +62,7 @@
           "foreground": "p:color_bg1",
           "powerline_symbol": "\ue0b0",
           "style": "powerline",
-          "template": "{{ .Full }} ",
+          "template": " \ue73c {{ .Full }} ",
           "type": "python"
         },
         {

@@ -3,7 +3,7 @@ enable_overdrive = true
 
 [bar.default]
 capsule = true
-center = [ "workspaces", "widget" ]
+center = [ "workspaces" ]
 end = [ "tray", "notifications", "network", "bluetooth", "volume", "brightness", "battery" ]
 margin_edge = 0
 margin_ends = 0

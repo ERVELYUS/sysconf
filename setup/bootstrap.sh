@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# setup/bootstrap.sh — sysconf installer
+# Run this after a fresh NixOS install and cloning the repo.
+# Works with or without disk encryption.
 set -euo pipefail
 
 # ── Resolve repo root (script lives in setup/, repo is one level up) ─────────
@@ -18,8 +21,9 @@ ask()  { echo -e "\n${BOLD}$*${NC}"; }
 # ── Preflight ─────────────────────────────────────────────────────────────────
 [[ $EUID -eq 0 ]] && die "Run as your normal user, not root. sudo will be used where needed."
 command -v nixos-rebuild &>/dev/null || die "nixos-rebuild not found — are you on NixOS?"
-[[ -f "$REPO_DIR/flake.nix" ]] || die "flake.nix not found at $REPO_DIR — wrong repo structure."
-[[ -f "$REPO_DIR/core.nix" ]]  || die "core.nix not found at $REPO_DIR — wrong repo structure."
+[[ -f "$REPO_DIR/flake.nix" ]]            || die "flake.nix not found at $REPO_DIR — wrong repo structure."
+[[ -f "$REPO_DIR/base/common/core.nix" ]] || die "base/common/core.nix not found — wrong repo structure."
+[[ -d "$REPO_DIR/base" ]]                 || die "base/ not found — wrong repo structure."
 
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════════╗${NC}"
@@ -108,24 +112,53 @@ if [[ "$LUKS_ENCRYPTED" == true && ${#LUKS_NAMES[@]} -gt 0 ]]; then
   fi
 fi
 
-# ── Profile selection ─────────────────────────────────────────────────────────
-PROFILES_DIR="$REPO_DIR/profiles"
-SELECTED_PROFILES=()
+# ── Base selection (single select) ────────────────────────────────────────────
+BASE_DIR="$REPO_DIR/base"
+SELECTED_BASE=""
 
-if [[ -d "$PROFILES_DIR" ]]; then
-  mapfile -t AVAILABLE < <(find "$PROFILES_DIR" -maxdepth 1 -name "*.nix" \
-                            -exec basename {} .nix \; | sort)
+mapfile -t AVAILABLE_BASES < <(find "$BASE_DIR" -maxdepth 1 -name "*.nix" \
+                                 -exec basename {} .nix \; | sort)
 
-  if [[ ${#AVAILABLE[@]} -gt 0 ]]; then
+if [[ ${#AVAILABLE_BASES[@]} -eq 0 ]]; then
+  die "No bases found in base/ — repo structure is broken."
+fi
+
+echo ""
+info "Select a base for this machine (pick one):"
+for i in "${!AVAILABLE_BASES[@]}"; do
+  echo "  $((i+1))) ${AVAILABLE_BASES[$i]}"
+done
+
+while true; do
+  ask "Enter number:"
+  read -rp "  → " BASE_CHOICE
+  if [[ "$BASE_CHOICE" =~ ^[0-9]+$ ]] \
+      && (( BASE_CHOICE >= 1 && BASE_CHOICE <= ${#AVAILABLE_BASES[@]} )); then
+    SELECTED_BASE="${AVAILABLE_BASES[$((BASE_CHOICE-1))]}"
+    ok "Selected base: ${SELECTED_BASE}"
+    break
+  fi
+  warn "Invalid choice — enter a number between 1 and ${#AVAILABLE_BASES[@]}."
+done
+
+# ── Module selection (multi-select) ───────────────────────────────────────────
+MODULES_DIR="$REPO_DIR/modules"
+SELECTED_MODULES=()
+
+if [[ -d "$MODULES_DIR" ]]; then
+  mapfile -t AVAILABLE_MODULES < <(find "$MODULES_DIR" -maxdepth 1 -name "*.nix" \
+                                     -exec basename {} .nix \; | sort)
+
+  if [[ ${#AVAILABLE_MODULES[@]} -gt 0 ]]; then
     echo ""
-    info "Select profiles to include on this machine:"
-    for profile in "${AVAILABLE[@]}"; do
-      ask "  Include '${profile}'? [y/N]:"
+    info "Select modules to include on this machine:"
+    for module in "${AVAILABLE_MODULES[@]}"; do
+      ask "  Include '${module}'? [y/N]:"
       read -rp "  → " ans
-      [[ "${ans,,}" == "y" ]] && SELECTED_PROFILES+=("$profile")
+      [[ "${ans,,}" == "y" ]] && SELECTED_MODULES+=("$module")
     done
   else
-    info "No profiles found in profiles/ — skipping."
+    info "No modules found in modules/ — skipping."
   fi
 fi
 
@@ -153,12 +186,9 @@ else
 fi
 
 # ── Assemble hosts/<name>/configuration.nix ──────────────────────────────────
+# base and modules are injected via flake.nix mkHost, not via imports here.
+# configuration.nix is intentionally minimal: identity + hardware only.
 STATE_VER=$(nixos-version 2>/dev/null | grep -oP '^\d+\.\d+' || echo "25.05")
-
-PROFILE_IMPORT_BLOCK=""
-for p in "${SELECTED_PROFILES[@]}"; do
-  PROFILE_IMPORT_BLOCK+="    ../../profiles/${p}.nix\n"
-done
 
 LUKS_BLOCK=""
 for i in "${!LUKS_NAMES[@]}"; do
@@ -179,11 +209,6 @@ cat << NIXEOF
 {
   imports = [
     ./hardware.nix
-NIXEOF
-
-[[ -n "$PROFILE_IMPORT_BLOCK" ]] && echo -e "$PROFILE_IMPORT_BLOCK" | sed '/^[[:space:]]*$/d'
-
-cat << NIXEOF
   ];
 
   # --- IDENTITY
@@ -226,10 +251,23 @@ ok "Written hosts/$INPUT_HOST/configuration.nix"
 FLAKE="$REPO_DIR/flake.nix"
 MARKER="# BOOTSTRAP_HOSTS"
 
+# Build the Nix modules list literal
+if [[ ${#SELECTED_MODULES[@]} -eq 0 ]]; then
+  MODULES_NIX="[ ]"
+else
+  MODULES_NIX="[\n"
+  for m in "${SELECTED_MODULES[@]}"; do
+    MODULES_NIX+="            \"${m}\"\n"
+  done
+  MODULES_NIX+="          ]"
+fi
+
 if grep -q "$MARKER" "$FLAKE"; then
   NEW_BLOCK="        ${INPUT_HOST} = mkHost {\n"
   NEW_BLOCK+="          hostname = \"${INPUT_HOST}\";\n"
   NEW_BLOCK+="          username = \"${INPUT_USER}\";\n"
+  NEW_BLOCK+="          base = \"${SELECTED_BASE}\";\n"
+  NEW_BLOCK+="          modules = ${MODULES_NIX};\n"
   NEW_BLOCK+="        };\n\n"
   NEW_BLOCK+="        ${MARKER}"
   sed -i "s|${MARKER}|${NEW_BLOCK}|" "$FLAKE"
@@ -241,11 +279,13 @@ else
   echo "        ${INPUT_HOST} = mkHost {"
   echo "          hostname = \"${INPUT_HOST}\";"
   echo "          username = \"${INPUT_USER}\";"
+  echo "          base = \"${SELECTED_BASE}\";"
+  echo "          modules = ${MODULES_NIX};"
   echo "        };"
   echo ""
 fi
 
-# ── Update hardcoded /home/<user> paths in dotfiles (e.g. noctalia/settings.toml) ──
+# ── Update hardcoded /home/<user> paths in dotfiles ───────────────────────────
 DOTFILES_DIR="$REPO_DIR/dotfiles"
 if [[ "$INPUT_USER" != "nick" && -d "$DOTFILES_DIR" ]]; then
   echo ""
@@ -306,9 +346,10 @@ echo ""
 echo -e "  Repo path   : $REPO_DIR"
 echo -e "  Host config : hosts/${INPUT_HOST}/"
 echo -e "  Username    : ${INPUT_USER}"
-[[ ${#SELECTED_PROFILES[@]} -gt 0 ]] \
-  && echo -e "  Profiles    : ${SELECTED_PROFILES[*]}" \
-  || echo -e "  Profiles    : none"
+echo -e "  Base        : ${SELECTED_BASE}"
+[[ ${#SELECTED_MODULES[@]} -gt 0 ]] \
+  && echo -e "  Modules     : ${SELECTED_MODULES[*]}" \
+  || echo -e "  Modules     : none"
 echo ""
 echo -e "  To rebuild this machine at any time:"
 echo -e "  ${BOLD}os-switch${NC}   (alias for: nh os switch)"
