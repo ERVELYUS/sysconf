@@ -8,7 +8,7 @@
 
 {
   imports = [
-    ../common/desktop.nix
+    ./common/desktop.nix
   ];
 
   # --- DISPLAY MANAGER / DESKTOP
