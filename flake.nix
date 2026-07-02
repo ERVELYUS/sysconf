@@ -67,7 +67,7 @@
 
           modules = [
             ./hosts/${hostname}/configuration.nix
-            ./core.nix
+            ./base/common/core.nix
             ./base/${base}.nix
 
             stylix.nixosModules.stylix

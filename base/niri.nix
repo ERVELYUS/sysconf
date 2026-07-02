@@ -30,7 +30,6 @@
   # --- NIRI-SPECIFIC PACKAGES
   environment.systemPackages = with pkgs; [
     xwayland-satellite
-    ghostty
     rofi
     clipse
     wl-clipboard

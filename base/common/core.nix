@@ -10,6 +10,7 @@
   # --- GARBAGE COLLECTOR
   nix.optimise.automatic = true;
 
+  # --- NIX SETTINGS
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"

@@ -11,6 +11,9 @@ radius = 0
 shadow = false
 start = [ "control-center", "date", "clock", "keyboard_layout", "audio_visualizer" ]
 
+[battery]
+warning_threshold = 20
+
 [desktop_widgets]
 enabled = false
 

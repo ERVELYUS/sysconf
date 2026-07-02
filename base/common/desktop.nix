@@ -62,6 +62,7 @@
     vesktop
     onlyoffice-desktopeditors
     qdirstat
+    ghostty
 
     # Cursors & Icons
     bibata-cursors
