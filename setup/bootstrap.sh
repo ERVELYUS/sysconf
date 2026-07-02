@@ -246,6 +246,10 @@ NIXEOF
 } > "$HOST_DIR/configuration.nix"
 
 ok "Written hosts/$INPUT_HOST/configuration.nix"
+cd "$REPO_DIR"
+git add hosts/"$INPUT_HOST"/
+git add flake.nix
+info "Staged new host files for Nix."
 
 # ── Inject host into flake.nix ────────────────────────────────────────────────
 FLAKE="$REPO_DIR/flake.nix"
