@@ -1,0 +1,268 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
+  "palette": {
+    "color_fg0": "#ecf2f8",
+    "color_fg1": "#c6cdd5",
+    "color_bg1": "#0d1117",
+    "color_bg2": "#161b22",
+    "color_bg3": "#21262d",
+    "color_red": "#fa7970",
+    "color_yellow": "#faa356",
+    "color_green": "#7ce38b",
+    "color_blue": "#77bdfb",
+    "color_light_blue": "#a2d2fb",
+    "color_purple": "#cea5fb"
+  },
+  "blocks": [
+    {
+      "alignment": "left",
+      "segments": [
+        {
+          "background": "p:color_red",
+          "foreground": "p:color_fg0",
+          "leading_diamond": "\ue0b6",
+          "style": "diamond",
+          "template": "{{ .UserName }} ",
+          "type": "session"
+        },
+        {
+          "background": "p:color_yellow",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "options": {
+            "style": "folder"
+          },
+          "style": "powerline",
+          "template": " {{ .Path }} ",
+          "type": "path"
+        },
+        {
+          "background": "p:color_green",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "options": {
+            "branch_icon": "",
+            "fetch_status": true,
+            "fetch_upstream_icon": true
+          },
+          "style": "powerline",
+          "template": " ➜ ({{ .UpstreamIcon }}{{ .HEAD }}{{ if .Staging.Changed }} \uf055 {{ .Staging.String }}{{ end }}{{ if .Working.Changed }} \uf044 {{ .Working.String }}{{ end }}{{ if gt .StashCount 0 }} \ueb4b {{ .StashCount }}{{ end }}{{ if gt .Ahead 0 }} \u2191{{ .Ahead }}{{ end }}{{ if gt .Behind 0 }} \u2193{{ .Behind }}{{ end }}) ",
+          "type": "git"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue718 {{ .Full }} ",
+          "type": "node"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": "{{ .Full }} ",
+          "type": "python"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue627 {{ .Full }} ",
+          "type": "go"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue7a8 {{ .Full }} ",
+          "type": "rust"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue738 {{ .Full }} ",
+          "type": "java"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue634 {{ .Full }} ",
+          "type": "kotlin"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue77f {{ .Full }} ",
+          "type": "dotnet"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue73d {{ .Full }} ",
+          "type": "php"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue739 {{ .Full }} ",
+          "type": "ruby"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue755 {{ .Full }} ",
+          "type": "swift"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue798 {{ .Full }} ",
+          "type": "dart"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue61d {{ .Full }} ",
+          "type": "cmake"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue620 {{ .Full }} ",
+          "type": "lua"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue777 {{ .Full }} ",
+          "type": "haskell"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue624 {{ .Full }} ",
+          "type": "julia"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " R {{ .Full }} ",
+          "type": "r"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue769 {{ .Full }} ",
+          "type": "perl"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue62d {{ .Full }} ",
+          "type": "elixir"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue62f {{ .Full }} ",
+          "type": "crystal"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue768 {{ .Full }} ",
+          "type": "clojure"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue677 {{ .Full }} ",
+          "type": "ocaml"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue6a8 {{ .Full }} ",
+          "type": "nim"
+        },
+        {
+          "background": "p:color_blue",
+          "foreground": "p:color_bg1",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \ue61e {{ .Full }} ",
+          "type": "zig"
+        },
+        {
+          "background": "p:color_bg2",
+          "foreground": "p:color_fg1",
+          "options": {
+            "time_format": "15:04"
+          },
+          "style": "diamond",
+          "template": "  {{ .CurrentDate | date .Format }} ",
+          "trailing_diamond": "\ue0b0",
+          "type": "time"
+        }
+      ],
+      "type": "prompt"
+    },
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "newline": true,
+      "segments": [
+        {
+          "type": "text",
+          "style": "plain",
+          "template": "➜ ",
+          "foreground_templates": [
+            "{{ if gt .Code 0 }}p:color_red{{ else }}p:color_green{{ end }}"
+          ]
+        }
+      ]
+    }
+  ],
+  "final_space": true,
+  "version": 4
+}
