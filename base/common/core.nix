@@ -63,12 +63,6 @@
     LC_TIME = "en_GB.UTF-8";
   };
 
-  # --- NIXPKGS CONFIG
-  nixpkgs.config.allowUnfree = true;
-  nixpkgs.config.permittedInsecurePackages = [
-    "electron-39.8.10"
-  ];
-
   # --- SYSTEM PACKAGES (CLI, every host — including the server)
   environment.systemPackages = with pkgs; [
     git

@@ -56,6 +56,10 @@ sysconf/
    ```
    It'll ask for a hostname, username, password, and which profiles you want. It detects disk encryption on its own and offers to change the LUKS password if needed. From there it builds a new `hosts/<hostname>/` directory, wires it into the flake, and runs the first switch.
 4. Reboot. Everything's live — packages, niri, dotfiles, theming.
+5. If you changed username during bootstrap, run the cleanup script:
+   ```bash
+   bash ~/sysconf/setup/cleanup.sh
+   ```
 
 ## Aliases
 

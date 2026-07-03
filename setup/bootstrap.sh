@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 # setup/bootstrap.sh — sysconf installer
-# Run this after a fresh NixOS install and cloning the repo.
-# Works with or without disk encryption.
+# Run this after cloning the repo, on a fresh install or an existing machine.
 set -euo pipefail
 
-# ── Resolve repo root (script lives in setup/, repo is one level up) ─────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
+CURRENT_USER="$(whoami)"
+CURRENT_HOSTNAME="$(hostname)"
 
-# ── Colours ───────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; BOLD='\033[1m'; NC='\033[0m'
 
@@ -21,10 +20,20 @@ ask()  { echo -e "\n${BOLD}$*${NC}"; }
 # ── Preflight ─────────────────────────────────────────────────────────────────
 [[ $EUID -eq 0 ]] && die "Run as your normal user, not root. sudo will be used where needed."
 command -v nixos-rebuild &>/dev/null || die "nixos-rebuild not found — are you on NixOS?"
-command -v git &>/dev/null || die "git not found — run the script via: nix-shell -p git --run 'bash setup/bootstrap.sh'"
+command -v git &>/dev/null           || die "git not found — run via: nix-shell -p git --run 'bash setup/bootstrap.sh'"
 [[ -f "$REPO_DIR/flake.nix" ]]            || die "flake.nix not found at $REPO_DIR — wrong repo structure."
 [[ -f "$REPO_DIR/base/common/core.nix" ]] || die "base/common/core.nix not found — wrong repo structure."
 [[ -d "$REPO_DIR/base" ]]                 || die "base/ not found — wrong repo structure."
+
+# Warn if repo isn't at ~/sysconf — home.nix symlinks are hardcoded to that path.
+EXPECTED_REPO="/home/${CURRENT_USER}/sysconf"
+if [[ "$REPO_DIR" != "$EXPECTED_REPO" ]]; then
+  warn "Repo is at $REPO_DIR but home-manager expects it at $EXPECTED_REPO."
+  warn "Symlinks for nvim, niri, etc. will be broken unless the repo is at ~/sysconf."
+  ask "Continue anyway? [y/N]:"
+  read -rp "  → " _cont
+  [[ "${_cont,,}" == "y" ]] || die "Aborted. Move the repo to ~/sysconf and re-run."
+fi
 
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════════╗${NC}"
@@ -43,15 +52,12 @@ if [[ ${#_CRYPT[@]} -gt 0 && -n "${_CRYPT[0]}" ]]; then
   LUKS_ENCRYPTED=true
   echo ""
   info "Encrypted drive(s) detected:"
-
   for name in "${_CRYPT[@]}"; do
     DEP=$(dmsetup deps -o devname "$name" 2>/dev/null \
           | grep -oP '\(\K[^)]+' | head -1 || true)
     [[ -z "$DEP" ]] && warn "  Could not resolve underlying device for '$name', skipping." && continue
-
     UUID=$(sudo blkid -s UUID -o value "/dev/$DEP" 2>/dev/null || true)
     [[ -z "$UUID" ]] && warn "  Could not read UUID for /dev/$DEP, skipping." && continue
-
     LUKS_NAMES+=("$name")
     LUKS_DEVS+=("/dev/$DEP")
     LUKS_UUIDS+=("$UUID")
@@ -63,31 +69,41 @@ else
 fi
 
 # ── Hostname ──────────────────────────────────────────────────────────────────
-ask "Hostname for this machine:"
-read -rp "  → " INPUT_HOST
-[[ -z "$INPUT_HOST" ]] && die "Hostname cannot be empty."
+ask "Hostname (current: ${CURRENT_HOSTNAME}) — leave blank to keep:"
+read -rp "  → " _host
+INPUT_HOST="${_host:-$CURRENT_HOSTNAME}"
 [[ "$INPUT_HOST" =~ ^[a-zA-Z0-9_-]+$ ]] || die "Hostname must be alphanumeric (dashes/underscores OK)."
 
 if grep -qE "^\s*${INPUT_HOST}\s*=\s*mkHost" "$REPO_DIR/flake.nix" 2>/dev/null; then
-  die "Host '${INPUT_HOST}' already exists in flake.nix."
+  die "Host '${INPUT_HOST}' already exists in flake.nix. Edit it manually instead of re-running bootstrap."
 fi
 
 # ── Username ──────────────────────────────────────────────────────────────────
-ask "Username:"
-read -rp "  → " INPUT_USER
-[[ -z "$INPUT_USER" ]] && die "Username cannot be empty."
+ask "Username (current: ${CURRENT_USER}) — leave blank to keep:"
+read -rp "  → " _user
+INPUT_USER="${_user:-$CURRENT_USER}"
 [[ "$INPUT_USER" =~ ^[a-z_][a-z0-9_-]*$ ]] || die "Username must be a valid Linux username (lowercase, start with letter/underscore)."
 
-# ── User password ─────────────────────────────────────────────────────────────
-while true; do
-  ask "User password:"
-  read -rsp "  → " USER_PASS; echo
-  ask "Confirm user password:"
-  read -rsp "  → " USER_PASS2; echo
-  [[ "$USER_PASS" == "$USER_PASS2" ]] && break
-  warn "Passwords don't match — try again."
-done
-unset USER_PASS2
+USERNAME_CHANGED=false
+[[ "$INPUT_USER" != "$CURRENT_USER" ]] && USERNAME_CHANGED=true
+
+# ── Password ──────────────────────────────────────────────────────────────────
+ask "New password — leave blank to keep current:"
+read -rsp "  → " _pass; echo
+NEW_PASS=""
+
+if [[ -n "$_pass" ]]; then
+  while true; do
+    ask "Confirm new password:"
+    read -rsp "  → " _pass2; echo
+    [[ "$_pass" == "$_pass2" ]] && break
+    warn "Passwords don't match — try again."
+    ask "New password:"
+    read -rsp "  → " _pass; echo
+  done
+  NEW_PASS="$_pass"
+  unset _pass _pass2
+fi
 
 # ── LUKS password change (optional) ──────────────────────────────────────────
 CHANGE_LUKS=false
@@ -95,7 +111,7 @@ NEW_LUKS_PASS=""
 CURRENT_LUKS_PASS=""
 
 if [[ "$LUKS_ENCRYPTED" == true && ${#LUKS_NAMES[@]} -gt 0 ]]; then
-  ask "Change encryption password (leave blank if no change is required):"
+  ask "Change encryption password (leave blank to keep current):"
   read -rsp "  → " NEW_LUKS_PASS; echo
 
   if [[ -n "$NEW_LUKS_PASS" ]]; then
@@ -106,7 +122,6 @@ if [[ "$LUKS_ENCRYPTED" == true && ${#LUKS_NAMES[@]} -gt 0 ]]; then
       warn "Passwords don't match — try again."
     done
     unset NEW_LUKS_PASS2
-
     ask "Current encryption password (required to authorise the change):"
     read -rsp "  → " CURRENT_LUKS_PASS; echo
     CHANGE_LUKS=true
@@ -119,10 +134,7 @@ SELECTED_BASE=""
 
 mapfile -t AVAILABLE_BASES < <(find "$BASE_DIR" -maxdepth 1 -name "*.nix" \
                                  -exec basename {} .nix \; | sort)
-
-if [[ ${#AVAILABLE_BASES[@]} -eq 0 ]]; then
-  die "No bases found in base/ — repo structure is broken."
-fi
+[[ ${#AVAILABLE_BASES[@]} -eq 0 ]] && die "No bases found in base/ — repo structure is broken."
 
 echo ""
 info "Select a base for this machine (pick one):"
@@ -149,7 +161,6 @@ SELECTED_MODULES=()
 if [[ -d "$MODULES_DIR" ]]; then
   mapfile -t AVAILABLE_MODULES < <(find "$MODULES_DIR" -maxdepth 1 -name "*.nix" \
                                      -exec basename {} .nix \; | sort)
-
   if [[ ${#AVAILABLE_MODULES[@]} -gt 0 ]]; then
     echo ""
     info "Select modules to include on this machine:"
@@ -187,8 +198,6 @@ else
 fi
 
 # ── Assemble hosts/<name>/configuration.nix ──────────────────────────────────
-# base and modules are injected via flake.nix mkHost, not via imports here.
-# configuration.nix is intentionally minimal: identity + hardware only.
 STATE_VER=$(nixos-version 2>/dev/null | grep -oP '^\d+\.\d+' || echo "25.05")
 
 LUKS_BLOCK=""
@@ -247,16 +256,27 @@ NIXEOF
 } > "$HOST_DIR/configuration.nix"
 
 ok "Written hosts/$INPUT_HOST/configuration.nix"
-cd "$REPO_DIR"
-git add hosts/"$INPUT_HOST"/
-git add flake.nix
-info "Staged new host files for Nix."
+
+# ── Update hardcoded /home/<user> paths in dotfiles ───────────────────────────
+DOTFILES_DIR="$REPO_DIR/dotfiles"
+if [[ "$INPUT_USER" != "nick" && -d "$DOTFILES_DIR" ]]; then
+  echo ""
+  info "Checking for hardcoded '/home/nick' paths in dotfiles/ that need updating..."
+  mapfile -t MATCHES < <(grep -rl "/home/nick" "$DOTFILES_DIR" 2>/dev/null || true)
+  if [[ ${#MATCHES[@]} -gt 0 ]]; then
+    for f in "${MATCHES[@]}"; do
+      sed -i "s#/home/nick#/home/${INPUT_USER}#g" "$f"
+      ok "  Updated: ${f#$REPO_DIR/}"
+    done
+  else
+    info "  None found."
+  fi
+fi
 
 # ── Inject host into flake.nix ────────────────────────────────────────────────
 FLAKE="$REPO_DIR/flake.nix"
 MARKER="# BOOTSTRAP_HOSTS"
 
-# Build the Nix modules list literal
 if [[ ${#SELECTED_MODULES[@]} -eq 0 ]]; then
   MODULES_NIX="[ ]"
 else
@@ -278,40 +298,18 @@ if grep -q "$MARKER" "$FLAKE"; then
   sed -i "s|${MARKER}|${NEW_BLOCK}|" "$FLAKE"
   ok "Added '${INPUT_HOST}' to flake.nix"
 else
-  warn "Marker '${MARKER}' not found in flake.nix."
-  warn "Add the entry manually before running nixos-rebuild:"
-  echo ""
-  echo "        ${INPUT_HOST} = mkHost {"
-  echo "          hostname = \"${INPUT_HOST}\";"
-  echo "          username = \"${INPUT_USER}\";"
-  echo "          base = \"${SELECTED_BASE}\";"
-  echo "          modules = ${MODULES_NIX};"
-  echo "        };"
-  echo ""
+  warn "Marker '${MARKER}' not found in flake.nix — add the entry manually."
 fi
 
-# ── Update hardcoded /home/<user> paths in dotfiles ───────────────────────────
-DOTFILES_DIR="$REPO_DIR/dotfiles"
-if [[ "$INPUT_USER" != "nick" && -d "$DOTFILES_DIR" ]]; then
-  echo ""
-  info "Checking for hardcoded '/home/nick' paths in dotfiles/ that need updating..."
-  mapfile -t MATCHES < <(grep -rl "/home/nick" "$DOTFILES_DIR" 2>/dev/null || true)
-
-  if [[ ${#MATCHES[@]} -gt 0 ]]; then
-    for f in "${MATCHES[@]}"; do
-      sed -i "s#/home/nick#/home/${INPUT_USER}#g" "$f"
-      ok "  Updated: ${f#$REPO_DIR/}"
-    done
-  else
-    info "  None found."
-  fi
-fi
+# ── Stage everything for Nix (after ALL writes) ───────────────────────────────
+cd "$REPO_DIR"
+git add hosts/"$INPUT_HOST"/ flake.nix dotfiles/
+info "Staged all changes for Nix."
 
 # ── Change LUKS password ──────────────────────────────────────────────────────
 if [[ "$CHANGE_LUKS" == true ]]; then
   echo ""
   info "Changing LUKS password on ${#LUKS_DEVS[@]} device(s)..."
-
   for i in "${!LUKS_DEVS[@]}"; do
     dev="${LUKS_DEVS[$i]}"
     printf '%s\n%s\n' "$CURRENT_LUKS_PASS" "$NEW_LUKS_PASS" \
@@ -319,7 +317,6 @@ if [[ "$CHANGE_LUKS" == true ]]; then
       && ok "Changed LUKS password on $dev" \
       || warn "Failed on $dev — change manually: sudo cryptsetup luksChangeKey $dev"
   done
-
   unset CURRENT_LUKS_PASS NEW_LUKS_PASS
 fi
 
@@ -331,35 +328,53 @@ echo ""
 
 cd "$REPO_DIR"
 sudo nixos-rebuild switch --flake ".#${INPUT_HOST}" \
-  || die "nixos-rebuild failed — see output above. Your flake.nix and hosts/${INPUT_HOST}/ changes are still in place; fix and re-run nixos-rebuild manually."
+  || die "nixos-rebuild failed — see output above. Your flake.nix and hosts/${INPUT_HOST}/ are still in place; fix and re-run nixos-rebuild manually."
 
-# ── Set user password ─────────────────────────────────────────────────────────
-echo ""
-if id "$INPUT_USER" &>/dev/null; then
-  echo "${INPUT_USER}:${USER_PASS}" | sudo chpasswd \
-    && ok "Password set for '${INPUT_USER}'" \
-    || warn "chpasswd failed — set manually: sudo passwd ${INPUT_USER}"
-else
-  warn "User '${INPUT_USER}' not found post-rebuild — set password manually: sudo passwd ${INPUT_USER}"
+# ── Set password ──────────────────────────────────────────────────────────────
+if [[ -n "$NEW_PASS" ]]; then
+  echo ""
+  # Set on current user — if username changed, the new user gets it too after migration
+  echo "${CURRENT_USER}:${NEW_PASS}" | sudo chpasswd \
+    && ok "Password updated for '${CURRENT_USER}'" \
+    || warn "chpasswd failed — set manually: sudo passwd ${CURRENT_USER}"
+  unset NEW_PASS
 fi
-unset USER_PASS
+
+# ── Copy repo to new user's home if username changed ─────────────────────────
+if [[ "$USERNAME_CHANGED" == true ]]; then
+  TARGET_REPO="/home/${INPUT_USER}/sysconf"
+  echo ""
+  info "Copying sysconf repo to ${TARGET_REPO}..."
+  if [[ -d "$TARGET_REPO" ]]; then
+    warn "$TARGET_REPO already exists — skipping. Check manually."
+  else
+    sudo cp -r "$REPO_DIR" "$TARGET_REPO"
+    sudo chown -R "${INPUT_USER}:users" "$TARGET_REPO"
+    ok "Repo copied to $TARGET_REPO"
+  fi
+fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${GREEN}All done!${NC}"
 echo ""
-echo -e "  Repo path   : $REPO_DIR"
-echo -e "  Host config : hosts/${INPUT_HOST}/"
+echo -e "  Host        : ${INPUT_HOST}"
 echo -e "  Username    : ${INPUT_USER}"
 echo -e "  Base        : ${SELECTED_BASE}"
 [[ ${#SELECTED_MODULES[@]} -gt 0 ]] \
   && echo -e "  Modules     : ${SELECTED_MODULES[*]}" \
   || echo -e "  Modules     : none"
 echo ""
-echo -e "  To rebuild this machine at any time:"
-echo -e "  ${BOLD}os-switch${NC}   (alias for: nh os switch)"
-echo -e "  or manually:"
-echo -e "  ${BOLD}sudo nixos-rebuild switch --flake ${REPO_DIR}#${INPUT_HOST}${NC}"
+
+if [[ "$USERNAME_CHANGED" == true ]]; then
+  echo -e "  ${YELLOW}Your username changed from '${CURRENT_USER}' to '${INPUT_USER}'.${NC}"
+  echo -e "  ${YELLOW}After rebooting and logging in as '${INPUT_USER}', run:${NC}"
+  echo -e "  ${BOLD}bash ~/sysconf/setup/cleanup.sh${NC}"
+  echo -e "  ${YELLOW}This will migrate your files and remove the old user.${NC}"
+else
+  echo -e "  No user migration needed — reboot whenever you're ready."
+fi
+
 echo ""
 echo "Reboot to make sure everything comes up cleanly."
 echo ""

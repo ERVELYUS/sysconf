@@ -66,6 +66,13 @@
           specialArgs = { inherit inputs username; };
 
           modules = [
+            {
+              nixpkgs.config.allowUnfree = true;
+              nixpkgs.config.permittedInsecurePackages = [
+                "electron-39.8.10"
+              ];
+            }
+
             ./hosts/${hostname}/configuration.nix
             ./base/common/core.nix
             ./base/${base}.nix
