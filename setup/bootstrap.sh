@@ -17,7 +17,7 @@ warn() { echo -e "${YELLOW}[!]${NC} $*"; }
 die()  { echo -e "${RED}[✗]${NC} $*" >&2; exit 1; }
 ask()  { echo -e "\n${BOLD}$*${NC}"; }
 
-# ── Preflight ─────────────────────────────────────────────────────────────────
+# ─── Preflight ────────────────────────────────────────────────────────────────
 [[ $EUID -eq 0 ]] && die "Run as your normal user, not root. sudo will be used where needed."
 command -v nixos-rebuild &>/dev/null || die "nixos-rebuild not found — are you on NixOS?"
 command -v git &>/dev/null           || die "git not found — run via: nix-shell -p git --run 'bash setup/bootstrap.sh'"
@@ -37,10 +37,10 @@ fi
 
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║       sysconf — bootstrap installer          ║${NC}"
+echo -e "${BOLD}║      sysconf — bootstrap installer           ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════════╝${NC}"
 
-# ── LUKS detection ────────────────────────────────────────────────────────────
+# ─── LUKS detection ───────────────────────────────────────────────────────────
 LUKS_ENCRYPTED=false
 LUKS_NAMES=()
 LUKS_UUIDS=()
@@ -68,7 +68,7 @@ else
   info "No encrypted drives detected — disk encryption setup will be skipped."
 fi
 
-# ── Hostname ──────────────────────────────────────────────────────────────────
+# ─── Hostname ─────────────────────────────────────────────────────────────────
 ask "Hostname (current: ${CURRENT_HOSTNAME}) — leave blank to keep:"
 read -rp "  → " _host
 INPUT_HOST="${_host:-$CURRENT_HOSTNAME}"
@@ -78,7 +78,7 @@ if grep -qE "^\s*${INPUT_HOST}\s*=\s*mkHost" "$REPO_DIR/flake.nix" 2>/dev/null; 
   die "Host '${INPUT_HOST}' already exists in flake.nix. Edit it manually instead of re-running bootstrap."
 fi
 
-# ── Username ──────────────────────────────────────────────────────────────────
+# ─── Username ─────────────────────────────────────────────────────────────────
 ask "Username (current: ${CURRENT_USER}) — leave blank to keep:"
 read -rp "  → " _user
 INPUT_USER="${_user:-$CURRENT_USER}"
@@ -87,7 +87,7 @@ INPUT_USER="${_user:-$CURRENT_USER}"
 USERNAME_CHANGED=false
 [[ "$INPUT_USER" != "$CURRENT_USER" ]] && USERNAME_CHANGED=true
 
-# ── Password ──────────────────────────────────────────────────────────────────
+# ─── Password ─────────────────────────────────────────────────────────────────
 ask "New password — leave blank to keep current:"
 read -rsp "  → " _pass; echo
 NEW_PASS=""
@@ -105,7 +105,7 @@ if [[ -n "$_pass" ]]; then
   unset _pass _pass2
 fi
 
-# ── LUKS password change (optional) ──────────────────────────────────────────
+# ─── LUKS password change (optional) ──────────────────────────────────────────
 CHANGE_LUKS=false
 NEW_LUKS_PASS=""
 CURRENT_LUKS_PASS=""
@@ -128,7 +128,7 @@ if [[ "$LUKS_ENCRYPTED" == true && ${#LUKS_NAMES[@]} -gt 0 ]]; then
   fi
 fi
 
-# ── Base selection (single select) ────────────────────────────────────────────
+# ─── Base selection (single select) ───────────────────────────────────────────
 BASE_DIR="$REPO_DIR/base"
 SELECTED_BASE=""
 
@@ -145,8 +145,7 @@ done
 while true; do
   ask "Enter number:"
   read -rp "  → " BASE_CHOICE
-  if [[ "$BASE_CHOICE" =~ ^[0-9]+$ ]] \
-      && (( BASE_CHOICE >= 1 && BASE_CHOICE <= ${#AVAILABLE_BASES[@]} )); then
+  if [[ "$BASE_CHOICE" =~ ^[0-9]+$ ]] && (( BASE_CHOICE >= 1 && BASE_CHOICE <= ${#AVAILABLE_BASES[@]} )); then
     SELECTED_BASE="${AVAILABLE_BASES[$((BASE_CHOICE-1))]}"
     ok "Selected base: ${SELECTED_BASE}"
     break
@@ -154,7 +153,7 @@ while true; do
   warn "Invalid choice — enter a number between 1 and ${#AVAILABLE_BASES[@]}."
 done
 
-# ── Module selection (multi-select) ───────────────────────────────────────────
+# ─── Module selection (multi-select) ──────────────────────────────────────────
 MODULES_DIR="$REPO_DIR/modules"
 SELECTED_MODULES=()
 
@@ -174,7 +173,7 @@ if [[ -d "$MODULES_DIR" ]]; then
   fi
 fi
 
-# ── Create host directory ─────────────────────────────────────────────────────
+# ─── Create host directory ────────────────────────────────────────────────────
 HOST_DIR="$REPO_DIR/hosts/$INPUT_HOST"
 
 if [[ -d "$HOST_DIR" ]]; then
@@ -187,7 +186,7 @@ fi
 mkdir -p "$HOST_DIR"
 ok "Created hosts/$INPUT_HOST/"
 
-# ── hardware.nix ─────────────────────────────────────────────────────────────
+# ─── hardware.nix ─────────────────────────────────────────────────────────────
 if [[ -f /etc/nixos/hardware-configuration.nix ]]; then
   cp /etc/nixos/hardware-configuration.nix "$HOST_DIR/hardware.nix"
   ok "Copied /etc/nixos/hardware-configuration.nix → hardware.nix"
@@ -197,7 +196,7 @@ else
   ok "Generated hardware.nix"
 fi
 
-# ── Assemble hosts/<name>/configuration.nix ──────────────────────────────────
+# ─── Assemble hosts/<name>/configuration.nix ──────────────────────────────────
 STATE_VER=$(nixos-version 2>/dev/null | grep -oP '^\d+\.\d+' || echo "25.05")
 
 LUKS_BLOCK=""
@@ -220,7 +219,7 @@ cat << NIXEOF
   imports = [
     ./hardware.nix
   ];
-
+  
   # --- IDENTITY
   networking.hostName = "${INPUT_HOST}";
 
@@ -228,7 +227,6 @@ cat << NIXEOF
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.timeout = 3;
-
 NIXEOF
 
 if [[ -n "$LUKS_BLOCK" ]]; then
@@ -257,7 +255,7 @@ NIXEOF
 
 ok "Written hosts/$INPUT_HOST/configuration.nix"
 
-# ── Update hardcoded /home/<user> paths in dotfiles ───────────────────────────
+# ─── Update hardcoded /home/<user> paths in dotfiles ──────────────────────────
 DOTFILES_DIR="$REPO_DIR/dotfiles"
 if [[ "$INPUT_USER" != "nick" && -d "$DOTFILES_DIR" ]]; then
   echo ""
@@ -273,7 +271,7 @@ if [[ "$INPUT_USER" != "nick" && -d "$DOTFILES_DIR" ]]; then
   fi
 fi
 
-# ── Inject host into flake.nix ────────────────────────────────────────────────
+# ─── Inject host into flake.nix ───────────────────────────────────────────────
 FLAKE="$REPO_DIR/flake.nix"
 MARKER="# BOOTSTRAP_HOSTS"
 
@@ -301,12 +299,12 @@ else
   warn "Marker '${MARKER}' not found in flake.nix — add the entry manually."
 fi
 
-# ── Stage everything for Nix (after ALL writes) ───────────────────────────────
+# ─── Stage everything for Nix (after ALL writes) ──────────────────────────────
 cd "$REPO_DIR"
 git add hosts/"$INPUT_HOST"/ flake.nix dotfiles/
 info "Staged all changes for Nix."
 
-# ── Change LUKS password ──────────────────────────────────────────────────────
+# ─── Change LUKS password ─────────────────────────────────────────────────────
 if [[ "$CHANGE_LUKS" == true ]]; then
   echo ""
   info "Changing LUKS password on ${#LUKS_DEVS[@]} device(s)..."
@@ -320,7 +318,7 @@ if [[ "$CHANGE_LUKS" == true ]]; then
   unset CURRENT_LUKS_PASS NEW_LUKS_PASS
 fi
 
-# ── nixos-rebuild ─────────────────────────────────────────────────────────────
+# ─── nixos-rebuild ────────────────────────────────────────────────────────────
 echo ""
 info "Running: sudo nixos-rebuild switch --flake ${REPO_DIR}#${INPUT_HOST}"
 info "This may take a while on first run..."
@@ -330,17 +328,17 @@ cd "$REPO_DIR"
 sudo nixos-rebuild switch --flake ".#${INPUT_HOST}" \
   || die "nixos-rebuild failed — see output above. Your flake.nix and hosts/${INPUT_HOST}/ are still in place; fix and re-run nixos-rebuild manually."
 
-# ── Set password ──────────────────────────────────────────────────────────────
+# ─── Set password ─────────────────────────────────────────────────────────────
 if [[ -n "$NEW_PASS" ]]; then
   echo ""
-  # Set on current user — if username changed, the new user gets it too after migration
-  echo "${CURRENT_USER}:${NEW_PASS}" | sudo chpasswd \
-    && ok "Password updated for '${CURRENT_USER}'" \
-    || warn "chpasswd failed — set manually: sudo passwd ${CURRENT_USER}"
+  # FIX: Set the password for INPUT_USER so the newly created account isn't locked out.
+  echo "${INPUT_USER}:${NEW_PASS}" | sudo chpasswd \
+    && ok "Password updated for '${INPUT_USER}'" \
+    || warn "chpasswd failed — set manually: sudo passwd ${INPUT_USER}"
   unset NEW_PASS
 fi
 
-# ── Copy repo to new user's home if username changed ─────────────────────────
+# ─── Copy repo to new user's home if username changed ─────────────────────────
 if [[ "$USERNAME_CHANGED" == true ]]; then
   TARGET_REPO="/home/${INPUT_USER}/sysconf"
   echo ""
@@ -354,7 +352,7 @@ if [[ "$USERNAME_CHANGED" == true ]]; then
   fi
 fi
 
-# ── Summary ───────────────────────────────────────────────────────────────────
+# ─── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${GREEN}All done!${NC}"
 echo ""

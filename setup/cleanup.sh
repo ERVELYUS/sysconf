@@ -18,12 +18,11 @@ die()  { echo -e "${RED}[✗]${NC} $*" >&2; exit 1; }
 
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║       sysconf — post-bootstrap cleanup       ║${NC}"
+echo -e "${BOLD}║      sysconf — post-bootstrap cleanup        ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════════╝${NC}"
 echo ""
 
-# ── Find old user ─────────────────────────────────────────────────────────────
-# Any normal user (UID 1000–60000) that isn't the current user.
+# ─── Find old user ────────────────────────────────────────────────────────────
 OLD_USER=""
 OLD_HOME=""
 
@@ -36,7 +35,7 @@ while IFS=: read -r name _ uid _ _ home _; do
 done < /etc/passwd
 
 if [[ -z "$OLD_USER" ]]; then
-  ok "No leftover users found — nothing to clean up."
+  ok "No leftover users found — nothing to do here."
   echo ""
   exit 0
 fi
@@ -51,7 +50,7 @@ echo ""
 read -rp "  Continue? [y/N]: " CONFIRM
 [[ "${CONFIRM,,}" == "y" ]] || { info "Cancelled."; echo ""; exit 0; }
 
-# ── Migrate home directory ────────────────────────────────────────────────────
+# ─── Migrate home directory ───────────────────────────────────────────────────
 CURRENT_HOME="/home/${CURRENT_USER}"
 BACKUP_DIR="${CURRENT_HOME}/.migration-backup"
 
@@ -60,23 +59,24 @@ info "Migrating files from ${OLD_HOME}/ → ${CURRENT_HOME}/..."
 
 shopt -s dotglob  # include hidden files
 for item in "$OLD_HOME"/*; do
-  [[ -e "$item" ]] || continue  # skip if glob found nothing
+  [[ -e "$item" || -L "$item" ]] || continue  # skip if glob found nothing
   name="$(basename "$item")"
   dest="${CURRENT_HOME}/${name}"
 
+  # Rule 1: Symlink at destination (managed by home-manager) -> skip
   if [[ -L "$dest" ]]; then
-    # Symlink in new home = home-manager managed — leave it alone
     info "  Skipping '${name}' — managed by home-manager (symlink)"
     continue
   fi
 
+  # Rule 2/3: If file/dir exists at destination -> backup to .migration-backup
   if [[ -e "$dest" ]]; then
-    # Real file/dir conflict — back up and replace
     mkdir -p "$BACKUP_DIR"
     sudo mv "$dest" "${BACKUP_DIR}/${name}"
     warn "  Backed up existing '${name}' to .migration-backup/"
   fi
 
+  # Move over
   sudo mv "$item" "$dest"
   sudo chown -R "${CURRENT_USER}:users" "$dest"
   ok "  Moved '${name}'"
@@ -89,7 +89,7 @@ if [[ -d "$BACKUP_DIR" ]]; then
   warn "Review them and delete once you're satisfied nothing was lost."
 fi
 
-# ── Remove old user and their now-empty home ──────────────────────────────────
+# ─── Remove old user and their now-empty home ─────────────────────────────────
 echo ""
 info "Removing user '${OLD_USER}'..."
 sudo userdel "$OLD_USER" \
@@ -102,7 +102,7 @@ if [[ -d "$OLD_HOME" ]]; then
     || warn "Could not remove ${OLD_HOME} — remove manually: sudo rm -rf ${OLD_HOME}"
 fi
 
-# ── Done ──────────────────────────────────────────────────────────────────────
+# ─── Done ─────────────────────────────────────────────────────────────────────
 echo ""
 ok "Cleanup complete. You are now the only user on this system."
 echo ""

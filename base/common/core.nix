@@ -92,7 +92,7 @@
   # --- SHELL & SESSION
   environment.shellAliases = {
     os-switch = "nh os switch";
-    os-hop = "nh os boot";
+    os-hop = "nohup sudo nh os switch > /tmp/os-switch-de.log 2>&1 & disown; echo 'Switching DE in background. GUI will restart shortly.'";
     os-update = "nh os switch --update";
     os-clean = "nh clean all --keep 3 && sudo /run/current-system/bin/switch-to-configuration boot";
     c = "clear";
