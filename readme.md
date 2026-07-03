@@ -68,6 +68,8 @@ sysconf/
 | `os-switch` | rebuild and switch (`nh os switch`) |
 | `os-update` | update all flake inputs, then rebuild and switch |
 | `os-clean` | clean old generations, keep the last 4 |
+| `os-hop` | Switches DE after changing it in flake.nix (DE will change after reboot) |
+
 
 ## Adding a host by hand
  

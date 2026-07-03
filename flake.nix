@@ -85,6 +85,7 @@
               home-manager.useUserPackages = true;
               home-manager.extraSpecialArgs = { inherit inputs username; };
               home-manager.users.${username} = import ./dotfiles/home.nix;
+              home-manager.backupFileExtension = "hm-backup";
             }
           ]
           ++ (map (m: ./modules/${m}.nix) modules);

@@ -92,6 +92,7 @@
   # --- SHELL & SESSION
   environment.shellAliases = {
     os-switch = "nh os switch";
+    os-hop = "nh os boot";
     os-update = "nh os switch --update";
     os-clean = "nh clean all --keep 3 && sudo /run/current-system/bin/switch-to-configuration boot";
     c = "clear";
