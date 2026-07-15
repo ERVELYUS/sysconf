@@ -1,5 +1,5 @@
 {
-  description = "sysconf — NixOS system configurations";
+  description = "sysconf — NixOS system configuration";
 
   # --- INPUTS
   inputs = {
@@ -15,16 +15,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    noctalia = {
-      url = "github:noctalia-dev/noctalia";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    noctalia-greeter = {
-      url = "github:noctalia-dev/noctalia-greeter";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     zen-browser = {
       url = "github:youwen5/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -32,6 +22,11 @@
 
     stylix = {
       url = "github:danth/stylix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    noctalia = {
+      url = "github:noctalia-dev/noctalia";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -43,22 +38,18 @@
       nixpkgs,
       home-manager,
       nh,
-      noctalia,
-      noctalia-greeter,
       zen-browser,
       stylix,
+      noctalia,
       ...
     }@inputs:
     let
       system = "x86_64-linux";
 
-      # base    : string — name of a file in base/, exactly one per host, required
-      # modules : list of strings — names of files in modules/, zero or more, optional
       mkHost =
         {
           hostname,
           username,
-          base,
           modules ? [ ],
         }:
         nixpkgs.lib.nixosSystem {
@@ -75,8 +66,7 @@
             }
 
             ./hosts/${hostname}/configuration.nix
-            ./base/common/core.nix
-            ./base/${base}.nix
+            ./core.nix
 
             stylix.nixosModules.stylix
             home-manager.nixosModules.home-manager
@@ -98,13 +88,9 @@
         whale = mkHost {
           hostname = "whale";
           username = "nick";
-          base = "niri";
           modules = [
           ];
         };
-
-        # BOOTSTRAP_HOSTS
-
       };
     };
 }

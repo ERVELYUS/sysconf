@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=NixOS
+Description=NixOS boot/unlock screen
+ModuleName=script
+
+[script]
+ImageDir=/etc/plymouth/themes/nixos
+ScriptFile=/etc/plymouth/themes/nixos/nixos.script

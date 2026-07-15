@@ -1,4 +1,5 @@
 {
+  pkgs,
   config,
   username,
   ...
@@ -9,6 +10,7 @@
   home.username = username;
   home.homeDirectory = "/home/${username}";
   home.stateVersion = "24.05";
+  home.pointerCursor.enable = true;
 
   programs.home-manager.enable = true;
 
@@ -17,6 +19,7 @@
     ./ghostty/ghostty.nix
     ./zsh/zsh.nix
     ./swayidle/swayidle.nix
+    ./hyprlock/hyprlock.nix
   ];
 
   # --- SYMLINKS
@@ -24,13 +27,28 @@
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/sysconf/dotfiles/nvim";
   xdg.configFile."niri".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/sysconf/dotfiles/niri";
+  xdg.configFile."noctalia/settings.toml".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/sysconf/dotfiles/noctalia/settings.toml";
+
   xdg.configFile."clipse/config.json".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/sysconf/dotfiles/clipse/config.json";
-  home.file.".local/state/noctalia/settings.toml".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/sysconf/dotfiles/noctalia/settings.toml";
+  xdg.configFile."fastfetch/config.jsonc".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/sysconf/dotfiles/fastfetch/config.jsonc";
 
   home.sessionVariables = {
     NIXOS_OZONE_WL = "1";
+  };
+
+  services.batsignal = {
+    enable = true;
+    extraArgs = [
+      "-w"
+      "20" # Warning notification at 20%
+      "-c"
+      "10" # Critical notification at 10%
+      "-d"
+      "5" # Danger/hibernate at 5%
+    ];
   };
 
   xdg.mimeApps = {

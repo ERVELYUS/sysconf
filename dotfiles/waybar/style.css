@@ -1,0 +1,125 @@
+@define-color bg1 #0d1117;
+@define-color bg2 #161b22;
+@define-color bg3 #21262d;
+@define-color fg0 #ecf2f8;
+@define-color fg1 #c6cdd5;
+@define-color red #fa7970;
+@define-color yellow #faa356;
+@define-color green #7ce38b;
+@define-color blue #77bdfb;
+@define-color light_blue #a2d2fb;
+@define-color purple #cea5fb;
+
+* {
+  background-color: @bg1;
+  color: @fg0;
+  border: none;
+  border-radius: 0;
+  min-height: 0;
+  font-family: 'JetBrainsMono Nerd Font';
+  font-size: 14px;
+}
+
+.modules-left {
+  margin-left: 8px;
+}
+
+.modules-right {
+  margin-right: 8px;
+}
+
+#workspaces button {
+  all: initial;
+  padding: 0 6px;
+  margin: 0 1.5px;
+  min-width: 9px;
+  color: @fg1;
+}
+
+#workspaces button.active {
+  color: @blue;
+  font-weight: bold;
+}
+
+#workspaces button.empty,
+#workspaces button.empty label {
+  font-size: 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  outline: none;
+}
+
+#workspaces button.empty.focused,
+#workspaces button.empty.focused label {
+  font-size: 12px;
+  min-width: 9px;
+  padding: 0 6px;
+  margin: 0 1.5px;
+}
+
+#cpu {
+  min-width: 12px;
+  margin: 0 7.5px;
+}
+
+#workspaces {
+  margin: 0;
+}
+
+#network,
+#bluetooth,
+#pulseaudio,
+#backlight,
+#battery {
+  min-width: 20px;
+  margin: 0 6px;
+}
+
+#tray {
+  margin-left: 8px;
+  margin-right: 8px;
+}
+
+#custom-expand-icon {
+  margin-right: 18px;
+}
+
+tooltip {
+  background-color: @bg2;
+  color: @fg0;
+  padding: 2px;
+}
+
+#clock {
+  margin-left: 8.75px;
+  margin-right: 12px;
+  color: @fg0;
+  font-weight: 600;
+}
+
+#language {
+  margin-left: 8px;
+  color: @purple;
+  font-size: 14px;
+}
+
+.hidden {
+  opacity: 0;
+}
+
+/* Battery state coloring */
+#battery.warning {
+  color: @yellow;
+}
+
+#battery.critical {
+  color: @red;
+}
+
+/* Bluetooth connected state */
+#bluetooth.connected {
+  color: @blue;
+}

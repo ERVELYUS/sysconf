@@ -12,15 +12,9 @@ My NixOS configuration — system settings, packages, and dotfiles
 
 ```
 sysconf/
-├── flake.nix              # entry point, defines every host
-├── base/
-│   ├── common/
-│   │   ├── core.nix       # settings every machine gets, no exceptions
-│   │   └── desktop.nix    # shared GUI tools, imported by GUI bases only
-│   ├── niri.nix           # Niri + Noctalia compositor setup
-│   ├── kde.nix            # KDE Plasma setup
-│   └── server.nix         # headless, no DE
-├── modules/               # optional feature sets, mix and match per host
+├── flake.nix          # entry point, defines every host
+├── core.nix            # settings shared by every machine
+├── modules/            # optional feature sets a host can opt into
 │   ├── gaming.nix
 │   ├── virtualisation.nix
 │   └── creative.nix
@@ -28,20 +22,16 @@ sysconf/
 │   └── <hostname>/
 │       ├── configuration.nix   # hostname, bootloader, LUKS, user account
 │       └── hardware.nix        # auto-generated, don't touch by hand
-├── dotfiles/              # home-manager config: nvim, niri, ghostty, etc.
-└── setup/
-    └── bootstrap.sh       # installer for new machines
+└── dotfiles/            # home-manager config: nvim, niri, noctalia, ghostty, etc.
 ```
 
 ## How it's organized
 
-`base/common/core.nix` covers whatever every machine needs
+`core.nix` covers whatever every machine needs — the desktop is niri + Noctalia.
 
-`base/` is where the machine type is decided — exactly one base is selected per host
+`modules/` is the opt-in layer above that. Things like gaming, virtualisation, or creative tools live there, and a host only picks them up if it lists them in `flake.nix`.
 
-`modules/` is the opt-in layer above that. Things like Steam or virtualisation live there, and a host only picks them up if it declares them in `flake.nix`
-
-`hosts/<name>/` holds only what's specific to that one machine — hostname, disk encryption UUIDs, bootloader
+`hosts/<name>/` holds only what's actually specific to that one machine — hostname, disk encryption, bootloader. Adding a new machine means a new folder under `hosts/` and one entry in `flake.nix`.
 
 ## Installing on a new machine
 
@@ -50,16 +40,11 @@ sysconf/
    ```bash
    nix-shell -p git --run "git clone https://github.com/ERVELYUS/sysconf.git ~/sysconf"
    ```
-3. Run the installer:
+3. Add a host entry in `flake.nix` (see below) and a hardware config, then build:
    ```bash
-   nix-shell -p git --run "bash ~/sysconf/setup/bootstrap.sh"
+   sudo nixos-rebuild switch --flake ~/sysconf#<hostname>
    ```
-   It'll ask for a hostname, username, password, and which profiles you want. It detects disk encryption on its own and offers to change the LUKS password if needed. From there it builds a new `hosts/<hostname>/` directory, wires it into the flake, and runs the first switch.
-4. Reboot. Everything's live — packages, niri, dotfiles, theming.
-5. If you changed username during bootstrap, run the cleanup script:
-   ```bash
-   bash ~/sysconf/setup/cleanup.sh
-   ```
+4. Reboot. Everything's live — packages, niri, noctalia, dotfiles, theming.
 
 ## Aliases
 
@@ -68,28 +53,25 @@ sysconf/
 | `os-switch` | rebuild and switch (`nh os switch`) |
 | `os-update` | update all flake inputs, then rebuild and switch |
 | `os-clean` | clean old generations, keep the last 4 |
-| `os-hop` | Switches DE after changing it in flake.nix (DE will change after reboot) |
 
+## Adding a host
 
-## Adding a host by hand
- 
 ```bash
 mkdir ~/sysconf/hosts/<newhost>
 cp /etc/nixos/hardware-configuration.nix ~/sysconf/hosts/<newhost>/hardware.nix
-# write configuration.nix following one of the existing hosts as a template
+# write configuration.nix following the existing host as a template
 ```
- 
+
 then add it to `flake.nix`:
- 
+
 ```nix
 <newhost> = mkHost {
   hostname = "<newhost>";
   username = "<user>";
-  base = "niri";         # or kde / server
   modules = [ "gaming" ];  # or [ ] for none
 };
 ```
- 
+
 ```bash
 sudo nixos-rebuild switch --flake ~/sysconf#<newhost>
 ```

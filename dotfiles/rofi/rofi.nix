@@ -30,8 +30,8 @@
           width = mkLiteral "850px";
           height = mkLiteral "1000px";
           background-color = mkLiteral "${colors.base00}D9";
-          border = mkLiteral "2px";
-          border-color = mkLiteral colors.base02;
+          border = mkLiteral "1px";
+          border-color = mkLiteral colors.base0D;
           border-radius = mkLiteral "0px";
           padding = mkLiteral "20px";
         };

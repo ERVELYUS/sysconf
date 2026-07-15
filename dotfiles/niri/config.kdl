@@ -120,7 +120,10 @@ binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // Lock Screen
-    Mod+Alt+L hotkey-overlay-title="Lock the Screen: Noctalia" { spawn "noctalia" "msg" "session" "lock"; }
+    Mod+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "hyprlock"; }
+
+    // Notification center
+    //Mod+Z hotkey-overlay-title="Notification center" { spawn "swaync-client" "-t"; }
 
     // Launchers
     Mod+Q hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty"; }
