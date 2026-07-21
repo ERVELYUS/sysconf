@@ -37,26 +37,27 @@
 
   home.sessionVariables = {
     NIXOS_OZONE_WL = "1";
-  };
-
-  services.batsignal = {
-    enable = true;
-    extraArgs = [
-      "-w"
-      "20" # Warning notification at 20%
-      "-c"
-      "10" # Critical notification at 10%
-      "-d"
-      "5" # Danger/hibernate at 5%
-    ];
+    EDITOR = "nvim";
+    SUDO_EDITOR = "nvim";
   };
 
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
       "inode/directory" = "thunar.desktop";
+      "text/plain" = "nvim.desktop";
+      "text/markdown" = "nvim.desktop";
+      "text/x-shellscript" = "nvim.desktop";
+      "application/json" = "nvim.desktop";
+      "application/x-yaml" = "nvim.desktop";
     };
   };
+  xfconf.settings.thunar = {
+    "default-view" = "ThunarDetailsView"; # list view
+    "last-view" = "ThunarDetailsView";
+    "misc-single-click" = false;
+  };
+  home.file.".config/xfce4/helpers.rc".text = "TerminalEmulator=ghostty";
 
   # --- DESKTOP ENTRIES
   xdg.desktopEntries = {
@@ -66,7 +67,19 @@
     };
     nvim = {
       name = "Neovim wrapper";
+      exec = "ghostty -e nvim %F";
+      terminal = false;
       noDisplay = true;
+      mimeType = [
+        "text/plain"
+        "text/markdown"
+        "text/x-shellscript"
+        "text/x-python"
+        "application/json"
+        "application/x-yaml"
+        "text/x-csrc"
+        "text/x-nix"
+      ];
     };
     "nixos-manual" = {
       name = "NixOS Manual";

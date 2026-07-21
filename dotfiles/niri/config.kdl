@@ -119,6 +119,9 @@ binds {
     // Help / Overlay
     Mod+Shift+Slash { show-hotkey-overlay; }
 
+    // Noctalia's powermenu
+    Mod+Escape hotkey-overlay-title="Noctalia's powermenu" { spawn "noctalia" "msg" "panel-toggle" "session"; }
+
     // Lock Screen
     Mod+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "hyprlock"; }
 
@@ -256,7 +259,6 @@ binds {
     Mod+Shift+A { screenshot-screen; }
 
     // Misc
-    Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
     Mod+Shift+E { quit; }
     Ctrl+Alt+Delete { quit; }
     Mod+Shift+P { power-off-monitors; }

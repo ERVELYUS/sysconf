@@ -221,6 +221,7 @@ in
     thunar
     thunar-volman
     thunar-archive-plugin
+    xfconf
     loupe
     inputs.noctalia.packages.${pkgs.system}.default
 
@@ -270,6 +271,12 @@ in
       package = pkgs.bibata-cursors;
       name = "Bibata-Original-Classic";
       size = 20;
+    };
+    icons = {
+      enable = true;
+      package = pkgs.papirus-icon-theme;
+      dark = "Papirus-Dark";
+      light = "Papirus-Light";
     };
   };
 
